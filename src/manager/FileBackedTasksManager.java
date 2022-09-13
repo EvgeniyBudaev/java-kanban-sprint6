@@ -9,19 +9,23 @@ import tasks.Task;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FileBackedTasksManager extends InMemoryTaskManager {
-    private final HistoryManager historyManager;
+    private File file;
+    private final String HEADER_CSV_FILE = "id,type,name,status,description,epic\n";
 
     public FileBackedTasksManager(HistoryManager historyManager) {
         super(historyManager);
-        this.historyManager = historyManager;
     }
 
-    public void loadFromFile(File file) {
+    public FileBackedTasksManager(HistoryManager historyManager, File file) {
+        super(historyManager);
+        this.file = file;
+    }
+
+    public void loadFromFile() {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
 
             String line = bufferedReader.readLine();
@@ -52,19 +56,17 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
     }
 
     public void save() {
-        Path fileToSaveData = Path.of("data.csv");
-
         try {
-            if (Files.exists(fileToSaveData)) {
-                Files.delete(fileToSaveData);
+            if (Files.exists(file.toPath())) {
+                Files.delete(file.toPath());
             }
-            Files.createFile(fileToSaveData);
+            Files.createFile(file.toPath());
         } catch (IOException e) {
             throw new ManagerSaveException("Не удалось найти файл для записи данных");
         }
 
-        try (FileWriter writer = new FileWriter(String.valueOf(fileToSaveData), StandardCharsets.UTF_8)) {
-            writer.write("id,type,name,status,description,epic\n");
+        try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+            writer.write(HEADER_CSV_FILE);
 
             for (Task task : getAllTasks()) {
                 writer.write(toString(task) + "\n");
@@ -72,14 +74,14 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
             for (Epic epic : getAllEpics()) {
                 writer.write(toString(epic) + "\n");
-                List<Subtask> subtasksByEpic = getAllSubtasksByEpicId(epic.getId());
-                for (Subtask subtask : subtasksByEpic) {
-                    writer.write(toString(subtask) + "\n");
-                }
+            }
+
+            for (Subtask subtask : getAllSubtasks()) {
+                writer.write(toString(subtask) + "\n");
             }
 
             writer.write("\n");
-            writer.write(historyToString(historyManager));
+            writer.write(historyToString(getHistoryManager()));
         } catch (IOException e) {
             throw new ManagerSaveException("Не удалось сохранить в файл", e);
         }
@@ -241,6 +243,10 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         List<Task> history = manager.getHistory();
         StringBuilder str = new StringBuilder();
 
+        if (history.isEmpty()) {
+            return "";
+        }
+
         for (Task task : history) {
             str.append(task.getId()).append(",");
         }
@@ -267,34 +273,4 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         return toReturn;
     }
 
-    public static void main(String[] args) {
-        FileBackedTasksManager manager = new FileBackedTasksManager(Managers.getDefaultHistory());
-
-        Task firstTask = new Task("Разработать лифт до луны", "Космолифт", Status.NEW);
-        manager.createTask(firstTask);
-        Task secondTask = new Task("Познакомиться", "Tinder", Status.NEW);
-        manager.createTask(secondTask);
-
-        Epic firstEpic = new Epic("Посадить дерево", "Дерево", Status.NEW);
-        manager.createEpic(firstEpic);
-
-        Subtask firstSubtask = new Subtask("Купить семена", "Семена", Status.NEW, firstEpic.getId());
-        manager.createSubtask(firstSubtask);
-
-        manager.getTaskById(firstTask.getId());
-        manager.getTaskById(secondTask.getId());
-        System.out.println();
-
-//        System.out.println("--- Считывание из файла ---");
-//        Path path = Path.of("data.csv");
-//        manager.loadFromFile(new File(String.valueOf(path)));
-//        System.out.println("Задачи");
-//        System.out.println(manager.getAllTasks());
-//        System.out.println("Эпики");
-//        System.out.println(manager.getAllEpics());
-//        System.out.println("Подзадачи");
-//        System.out.println(manager.getAllSubtasks());
-//        System.out.println("История");
-//        System.out.println(manager.getHistory());
-    }
 }
