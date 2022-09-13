@@ -14,7 +14,7 @@ import java.util.List;
 
 public class FileBackedTasksManager extends InMemoryTaskManager {
     private File file;
-    private final String HEADER_CSV_FILE = "id,type,name,status,description,epic\n";
+    private static final String HEADER_CSV_FILE = "id,type,name,status,description,epic\n";
 
     public FileBackedTasksManager(HistoryManager historyManager) {
         super(historyManager);
