@@ -27,7 +27,6 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
 
     public void loadFromFile() {
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
-
             String line = bufferedReader.readLine();
             while (bufferedReader.ready()) {
                 line = bufferedReader.readLine();
@@ -232,11 +231,11 @@ public class FileBackedTasksManager extends InMemoryTaskManager {
         save();
     }
 
-    @Override
-    public void updateStatusEpic(Epic epic) {
-        super.updateStatusEpic(epic);
-        save();
-    }
+//    @Override
+//    public void updateStatusEpic(Epic epic) {
+//        super.updateStatusEpic(epic);
+//        save();
+//    }
 
     // Метод для сохранения истории в CSV
     static String historyToString(HistoryManager manager) {
